@@ -26,6 +26,56 @@ using namespace std;
 int main(int argc, const char *argv[])
 {
     /* INIT VARIABLES AND DATA STRUCTURES */
+    string detectorType = "SHITOMASI";    // SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT
+    string descriptorType = "BRISK";      // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
+    string matcherType = "MAT_BF";        // MAT_BF, MAT_FLANN
+    string selectorType = "SEL_KNN";       // SEL_NN, SEL_KNN
+    string arg;
+    if(argc == 2){
+        std::cout << "Usage: " << argv[0] << " <detectorType> <descriptorType> <matcherType> <selectorType>" << std::endl;
+        std::cout << "      - detectorType: SHITOMASI, HARRIS, FAST, BRISK, ORB, AKAZE, SIFT" << std::endl;
+        std::cout << "      - descriptorType: BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT" << std::endl;
+        std::cout << "      - matcherType: MAT_BF, MAT_FLANN" << std::endl;
+        std::cout << "      - matcherType: SEL_NN, SEL_KNN" << std::endl;
+        return 0;
+    }
+    if(argc >= 3){
+        arg = argv[1];
+        if(arg == "SHITOMASI" || arg == "HARRIS" || arg == "FAST" || arg == "BRISK" ||
+           arg == "ORB" || arg == "AKAZE" || arg == "SIFT"){ 
+            detectorType = arg;
+        }else{
+            cerr << "INVALID argument: " << arg << endl;
+            return -1;
+        }
+        arg = argv[2];
+        if(arg == "BRISK" || arg == "BRIEF" || arg == "ORB" ||
+           arg == "FREAK" || arg == "AKAZE" || arg == "SIFT"){ 
+            descriptorType = arg;
+        }else{
+            cerr << "INVALID argument: " << arg << endl;
+            return -1;
+        }
+    }
+    if(argc >= 5){
+        arg = argv[3];
+        if(arg == "MAT_BF" || arg == "MAT_FLANN"){ 
+            matcherType = arg;
+        }else{
+            cerr << "INVALID argument: " << arg << endl;
+            return -1;
+        }
+        arg = argv[4];
+        if(arg == "SEL_NN" || arg == "SEL_KNN"){ 
+            selectorType = arg;
+        }else{
+            cerr << "INVALID argument: " << arg << endl;
+            return -1;
+        }
+    }
+    std::cout << "*************************************************************************************************" << std::endl;
+    std::cout << "Using detector: " << detectorType << ", descriptor: " << descriptorType << ", matcher: " << matcherType << ", selection: " << selectorType << std::endl;
+    std::cout << "*************************************************************************************************" << std::endl;
 
     // data location
     string dataPath = "../";
@@ -91,7 +141,12 @@ int main(int argc, const char *argv[])
         // push image into data frame buffer
         DataFrame frame;
         frame.cameraImg = img;
-        dataBuffer.push_back(frame);
+        if(dataBuffer.size() < dataBufferSize){  
+            dataBuffer.push_back(frame);
+        }else{
+            dataBuffer.erase(dataBuffer.begin());
+            dataBuffer.push_back(frame);
+        }
 
         cout << "#1 : LOAD IMAGE INTO BUFFER done" << endl;
 
@@ -132,7 +187,7 @@ int main(int argc, const char *argv[])
         bVis = true;
         if(bVis)
         {
-            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), true);
+            show3DObjects((dataBuffer.end()-1)->boundingBoxes, cv::Size(4.0, 20.0), cv::Size(2000, 2000), false);
         }
         bVis = false;
 
@@ -140,7 +195,7 @@ int main(int argc, const char *argv[])
         
         
         // REMOVE THIS LINE BEFORE PROCEEDING WITH THE FINAL PROJECT
-        continue; // skips directly to the next image without processing what comes beneath
+        // continue; // skips directly to the next image without processing what comes beneath
 
         /* DETECT IMAGE KEYPOINTS */
 
@@ -150,17 +205,15 @@ int main(int argc, const char *argv[])
 
         // extract 2D keypoints from current image
         vector<cv::KeyPoint> keypoints; // create empty feature list for current image
-        string detectorType = "SHITOMASI";
-
+        double det_time;
         if (detectorType.compare("SHITOMASI") == 0)
         {
-            detKeypointsShiTomasi(keypoints, imgGray, false);
+            det_time = detKeypointsShiTomasi(keypoints, imgGray, false);
+        }else if (detectorType.compare("HARRIS") == 0){
+            det_time = detKeypointsHarris(keypoints, imgGray, false);
+        }else{
+            det_time = detKeypointsModern(keypoints, imgGray, detectorType, false);
         }
-        else
-        {
-            //...
-        }
-
         // optional : limit number of keypoints (helpful for debugging and learning)
         bool bLimitKpts = false;
         if (bLimitKpts)
@@ -184,8 +237,7 @@ int main(int argc, const char *argv[])
         /* EXTRACT KEYPOINT DESCRIPTORS */
 
         cv::Mat descriptors;
-        string descriptorType = "BRISK"; // BRISK, BRIEF, ORB, FREAK, AKAZE, SIFT
-        descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
+        auto des_time = descKeypoints((dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->cameraImg, descriptors, descriptorType);
 
         // push descriptors for current frame to end of data buffer
         (dataBuffer.end() - 1)->descriptors = descriptors;
@@ -199,13 +251,14 @@ int main(int argc, const char *argv[])
             /* MATCH KEYPOINT DESCRIPTORS */
 
             vector<cv::DMatch> matches;
-            string matcherType = "MAT_BF";        // MAT_BF, MAT_FLANN
-            string descriptorType = "DES_BINARY"; // DES_BINARY, DES_HOG
-            string selectorType = "SEL_NN";       // SEL_NN, SEL_KNN
+            string type = "DES_BINARY"; // BRIEF, BRISK, ORB, FREAK and KAZE
+            if(descriptorType.compare("SIFT") == 0){
+                type = "DES_HOG"; // SIFT
+            }
 
             matchDescriptors((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints,
                              (dataBuffer.end() - 2)->descriptors, (dataBuffer.end() - 1)->descriptors,
-                             matches, descriptorType, matcherType, selectorType);
+                             matches, type, matcherType, selectorType);
 
             // store matches in current data frame
             (dataBuffer.end() - 1)->kptMatches = matches;
@@ -281,6 +334,7 @@ int main(int argc, const char *argv[])
                         string windowName = "Final Results : TTC";
                         cv::namedWindow(windowName, 4);
                         cv::imshow(windowName, visImg);
+                        cv::resizeWindow(windowName, 800,800);
                         cout << "Press key to continue to next frame" << endl;
                         cv::waitKey(0);
                     }

@@ -83,6 +83,7 @@ void showLidarTopview(std::vector<LidarPoint> &lidarPoints, cv::Size worldSize, 
     string windowName = "Top-View Perspective of LiDAR data";
     cv::namedWindow(windowName, 2);
     cv::imshow(windowName, topviewImg);
+    cv::resizeWindow(windowName, 600,600);
     if(bWait)
     {
         cv::waitKey(0); // wait for key to be pressed
@@ -139,6 +140,7 @@ void showLidarImgOverlay(cv::Mat &img, std::vector<LidarPoint> &lidarPoints, cv:
         string windowName = "LiDAR data on image overlay";
         cv::namedWindow( windowName, 3 );
         cv::imshow( windowName, visImg );
+        cv::resizeWindow(windowName, 600,600);
         cv::waitKey(0); // wait for key to be pressed
     }
     else

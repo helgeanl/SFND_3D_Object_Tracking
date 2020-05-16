@@ -27,9 +27,14 @@ In this final project, you will implement the missing parts in the schematic. To
   * Mac: same deal as make - [install Xcode command line tools](https://developer.apple.com/xcode/features/)
   * Windows: recommend using [MinGW](http://www.mingw.org/)
 
+## OpenCV version
+* This code was developed using the latest OpenCV master where SIFT has ben moved from the non-free repository to the main package.
+* This means that all mentions of `SIFT` have to be replaced with `xfeatures2d::SIFT` if using an eariler version.
+
 ## Basic Build Instructions
 
 1. Clone this repo.
 2. Make a build directory in the top level project directory: `mkdir build && cd build`
 3. Compile: `cmake .. && make`
 4. Run it: `./3D_object_tracking`.
+
