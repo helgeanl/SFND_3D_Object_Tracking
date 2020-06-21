@@ -224,10 +224,16 @@ void computeTTCLidar(std::vector<LidarPoint> &lidarPointsPrev,
     std::vector<double> distPrev, distCurr;
     for(auto &pt : lidarPointsPrev) distPrev.push_back(pt.x);
     for(auto &pt : lidarPointsCurr) distCurr.push_back(pt.x);
-
-    double medianDistPrev = calculateMedian(distPrev);
-    double medianDistCurr = calculateMedian(distCurr);
-    TTC = medianDistCurr * dT / (medianDistPrev - medianDistCurr);
+    bool use_median = true;
+    if(use_median){
+        double medianDistPrev = calculateMedian(distPrev);
+        double medianDistCurr = calculateMedian(distCurr);
+        TTC = medianDistCurr * dT / (medianDistPrev - medianDistCurr);
+    }else{
+        auto prevMin = *std::min_element(distPrev.begin(),distPrev.end());
+        auto currMin = *std::min_element(distCurr.begin(),distCurr.end());
+        TTC = currMin * dT / (prevMin - currMin);
+    }
 }
 
 

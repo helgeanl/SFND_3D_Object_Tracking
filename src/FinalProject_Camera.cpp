@@ -122,6 +122,8 @@ int main(int argc, const char *argv[])
     double sensorFrameRate = 10.0 / imgStepWidth; // frames per second for Lidar and camera
     int dataBufferSize = 2;       // no. of images which are held in memory (ring buffer) at the same time
     vector<DataFrame> dataBuffer; // list of data frames which are held in memory at the same time
+    vector<double> lidar_ttc;
+    vector<double> camera_ttc;
     bool bVis = false;            // visualize results
 
     /* MAIN LOOP OVER ALL IMAGES */
@@ -129,7 +131,7 @@ int main(int argc, const char *argv[])
     for (size_t imgIndex = 0; imgIndex <= imgEndIndex - imgStartIndex; imgIndex+=imgStepWidth)
     {
         /* LOAD IMAGE INTO BUFFER */
-
+        std::cout << "\n\n-- Image: " << imgIndex << " --" << std::endl;
         // assemble filenames for current index
         ostringstream imgNumber;
         imgNumber << setfill('0') << setw(imgFillWidth) << imgStartIndex + imgIndex;
@@ -318,6 +320,8 @@ int main(int argc, const char *argv[])
                     double ttcCamera;
                     clusterKptMatchesWithROI(*currBB, (dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, (dataBuffer.end() - 1)->kptMatches);                    
                     computeTTCCamera((dataBuffer.end() - 2)->keypoints, (dataBuffer.end() - 1)->keypoints, currBB->kptMatches, sensorFrameRate, ttcCamera);
+                    lidar_ttc.push_back(ttcLidar);
+                    camera_ttc.push_back(ttcCamera);
                     //// EOF STUDENT ASSIGNMENT
 
                     bVis = true;
@@ -346,6 +350,13 @@ int main(int argc, const char *argv[])
         }
 
     } // eof loop over all images
+    cout << "Lidar TTC: ";
+    for (auto ttc : lidar_ttc) cout << ttc << ",";
+    cout << endl;
+    cout << "Camera TTC: ";
+    std::cout << detectorType << "." << descriptorType << " = [";
+    for (auto ttc : camera_ttc) cout << ttc << ",";
+    cout << "];" << endl;
 
     return 0;
 }

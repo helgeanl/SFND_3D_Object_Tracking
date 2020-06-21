@@ -201,13 +201,46 @@ void computeTTCCamera(std::vector<cv::KeyPoint> &kptsPrev, std::vector<cv::KeyPo
 
 ### FP.5 Performance Evaluation 1
 
-**Criteria:** Find examples where the TTC estimate of the Lidar sensor does not seem plausible. Describe your observations and provide a sound argumentation why you think this happened.
+**Criteria:** Find examples where the TTC estimate of the Lidar sensor does not seem plausible. Describe your observations and provide a sound argumentation why you think this happened. Several examples (2-3) have been identified and described in detail. The assertion that the TTC is off has been based on manually estimating the distance to the rear of the preceding vehicle from a top view perspective of the Lidar points.
 
+Using the median depth to estimate TTC from LiDAR measurements, no estimates could be classified as not plausible. Using the minimum depth however was more susceptible to outliers with varying results. In Fig. 1 we can see that the median depth gives reasonable results, while using the minimum depth give results that are not plausible with a high degree of noise. The reason for this can be seen in Table 1 where outliers in the previous frame influence the estiamte in the consecutive frame.
+
+![TTC LiDAR](images/TTC_lidar.png)
+
+**Fig. 1:** Estimated TTC using median and minimum depth from LiDAR measurements.
+
+
+**Table 1:** Highlighting of outliers between consecutive frames.
+Previous frame             |  Current frame
+:-------------------------:|:-------------------------:
+![LiDAR 6](images/lidar_6.png)  |  ![LiDAR 7](images/lidar_7.png)
+Frame 6                         | Frame 7
+![LiDAR 11](images/lidar_11.png) |  ![LiDAR 12](images/lidar_12.png)
+Frame 11                        | Frame 12
+![LiDAR 16](images/lidar_16.png) |  ![LiDAR 17](images/lidar_17.png)
+Frame 16                        | Frame 17
 
 ### FP.6 Performance Evaluation 2
 
-**Criteria:** Run several detector / descriptor combinations and look at the differences in TTC estimation. Find out which methods perform best and also include several examples where camera-based TTC estimation is way off. As with Lidar, describe your observations again and also look into potential reasons.
+**Criteria:** Run several detector / descriptor combinations and look at the differences in TTC estimation. Find out which methods perform best and also include several examples where camera-based TTC estimation is way off. As with Lidar, describe your observations again and also look into potential reasons. All detector / descriptor combinations implemented in previous chapters have been compared with regard to the TTC estimate on a frame-by-frame basis. To facilitate comparison, a spreadsheet and graph should be used to represent the different TTCs.
+
+![TTC camera](images/TTC_camera.png)
+
+**Fig. 2:** TTC estimates for all combinations of keypoint descriptors and detectors.
+
+![RMS](images/RMS_lidar_camera.png)
+
+**FIG. 3:** RMS values showing the difference between camera and median-depth LiDAR based TTC. 
+
+From Fig. 2 it is quite clear that the ORB, Harris and BRISK detector results in quite sporadic and unusable data. Using LiDAR based TTC as ground truth we get the results in Fig. 3 where all combinations of keypoint detectors and descriptors are compared by using the RMS error between camera and LiDAR based TTC. To decide which method performs best we use the RMS values above and the match speeds found in an earlier [project](https://github.com/helgeanl/SFND_2D_Feature_Tracking). The results can then be viewed in table 2, with FAST+BRISK as the method with the highest performance, weighting accuracy and speed.
 
 
+**Table 2:** Comparison of camera based TTC methods weighting accuracy and matching time.
+|   | Detector+Descriptor |  RMS  | Mean match time [ms] |                                              |
+|---|---------------------|-------|----------------------|----------------------------------------------|
+| 1 | FAST+BRISK          | 1.94  | 5.5                  | Best allrounder comparing accuracy and speed |
+| 2 | FAST+FREAK          | 1.83  | 34.11                | Accurate and relatively fast                 |
+| 3 | SIFT+FREAK          | 1.58  | 91.2                 | Accurate, but slow                           |
+| 4 | SIFT+SIFT           | 1.49  | 117.2                | Most accurate, but very slow                 |
 
 
